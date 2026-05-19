@@ -1,6 +1,8 @@
-import { supabase } from "../config/supabase.js";
+import jwt from "jsonwebtoken";
 
-export const authMiddleware = async (req, res, next) => {
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
+
+export const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -9,33 +11,18 @@ export const authMiddleware = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    // Vérification du token avec Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
+    try {
+        // Vérification du jeton JWT personnalisé
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        // On injecte les infos de l'utilisateur dans la requête
+        req.user = decoded;
+        next();
+    } catch (error) {
         return res.status(401).json({ error: "Token invalide ou expiré" });
     }
-
-    // RÉCUPÉRATION DU RÔLE DEPUIS LA TABLE PROFILES
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-    if (profileError) {
-        console.error("Erreur récupération profil:", profileError);
-        // On définit un rôle par défaut en cas d'erreur
-        user.role = 'user';
-    } else {
-        user.role = profile.role;
-    }
-
-    req.user = user;
-    next();
 };
 
-// Middleware optionnel pour restreindre une route aux Admins uniquement
 export const isAdmin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();

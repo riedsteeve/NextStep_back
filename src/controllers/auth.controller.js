@@ -1,35 +1,93 @@
 import { supabase } from "../config/supabase.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 
 // REGISTER
 export const register = async (req, res) => {
-  const { email, password, first_name, last_name } = req.body;
+  try {
+    const { email, password, first_name, last_name } = req.body;
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        first_name,
-        last_name
-      }
+    // 1. Vérifier si l'utilisateur existe déjà
+    const { data: existingUser } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Cet email est déjà utilisé" });
     }
-  });
 
-  if (error) return res.status(400).json(error);
+    // 2. Hacher le mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  res.json(data);
+    // 3. Insérer dans la table profiles
+    const { data, error } = await supabase
+      .from("profiles")
+      .insert([
+        {
+          email,
+          password: hashedPassword,
+          first_name,
+          last_name,
+          role: "user",
+        },
+      ])
+      .select("id, email, first_name, last_name, role")
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json({ message: "Utilisateur créé avec succès", user: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 // LOGIN
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
+    // 1. Chercher l'utilisateur par email
+    const { data: user, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("email", email)
+      .single();
 
-  if (error) return res.status(400).json(error);
+    if (error || !user) {
+      return res.status(400).json({ error: "Identifiants invalides" });
+    }
 
-  res.json(data);
+    // 2. Vérifier le mot de passe
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: "Identifiants invalides" });
+    }
+
+    // 3. Générer le jeton JWT
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    // 4. Réponse
+    res.json({
+      message: "Connexion réussie",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };

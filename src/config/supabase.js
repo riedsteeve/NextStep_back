@@ -13,8 +13,7 @@ const supabaseKey = process.env.SUPABASE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
     console.error("❌ Erreur : SUPABASE_URL ou SUPABASE_KEY manquante dans le fichier .env");
-} else {
-    console.log("✅ Supabase configuré pour l'URL :", supabaseUrl);
 }
 
+// Client unique avec la clé service_role pour gérer manuellement les profils
 export const supabase = createClient(supabaseUrl, supabaseKey);
