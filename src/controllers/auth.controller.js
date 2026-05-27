@@ -32,10 +32,11 @@ export const register = async (req, res) => {
           password: hashedPassword,
           first_name,
           last_name,
-          role: "user",
+          role: "user"
+          // La date est gérée par created_at dans Supabase
         },
       ])
-      .select("id, email, first_name, last_name, role")
+      .select("id, email, first_name, last_name, role, created_at")
       .single();
 
     if (error) throw error;
@@ -85,6 +86,7 @@ export const login = async (req, res) => {
         first_name: user.first_name,
         last_name: user.last_name,
         role: user.role,
+        created_at: user.created_at,
       },
     });
   } catch (error) {

@@ -6,7 +6,7 @@ const app = express();
 
 // Middleware
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: process.env.FRONTEND_URL || "https://nextstep-roan-two.vercel.app/",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   optionsSuccessStatus: 200,
@@ -25,9 +25,13 @@ app.get("/", (req, res) => {
 // Import des routes
 import authRoutes from "./routes/auth.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
+import noteRoutes from "./routes/note.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
 app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationRoutes);
+app.use("/api/notes", noteRoutes);
+app.use("/api/users", userRoutes);
 
 // Gestion des erreurs 404
 app.use((req, res) => {
