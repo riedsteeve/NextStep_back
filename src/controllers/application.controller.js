@@ -1,4 +1,27 @@
+import "dotenv/config";
+import { BlobServiceClient } from "@azure/storage-blob";
 import { supabase } from "../config/supabase.js";
+
+//Conf azure
+const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+const containerName = process.env.AZURE_CONTAINER_NAME || "uploads";
+const blobServiceClient =
+  BlobServiceClient.fromConnectionString(connectionString);
+const containerClient = blobServiceClient.getContainerClient(containerName);
+
+//Fonction pour téléverser les fichiers
+const uploadToAzure = async (file) => {
+  if (!file) return null;
+
+  const blobName = `${Date.now()}-${file.originalname}`;
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+  await blockBlobClient.uploadData(file.buffer, {
+    blobHTTPHeaders: { blobContentType: file.mimetype },
+  });
+
+  return blobName;
+};
 
 // Récupérer les candidatures (Toutes pour l'Admin, seulement les siennes pour le User)
 export const getAll = async (req, res) => {
@@ -19,9 +42,17 @@ export const getAll = async (req, res) => {
 };
 
 // Créer une candidature liée à l'utilisateur
+//Je modifie l'endpoint afin qu'il puisse envoyer les fichier vers le bucket Azure et récupérer les liens pour les stocker dans la base de données
 export const create = async (req, res) => {
   const userId = req.user.id;
   const { company, position, status, notes, contact, type_contact } = req.body;
+
+  const cvFile = req.files?.cv ? req.files.cv[0] : null;
+  const lmFile = req.files?.lm ? req.files.lm[0] : null;
+
+  //Upload sur Azure si les fichiers sont présent
+  const nom_cv = await uploadToAzure(cvFile);
+  const nom_lm = await uploadToAzure(lmFile);
 
   const { data, error } = await supabase
     .from("applications")
@@ -31,6 +62,8 @@ export const create = async (req, res) => {
         position,
         status,
         notes,
+        nom_cv,
+        nom_lm,
         contact,
         type_contact,
         user_id: userId,

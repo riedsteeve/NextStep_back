@@ -1,6 +1,7 @@
 import express from 'express';
 import { getAll, create, update, deleteApp } from '../controllers/application.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
+import upload from '../config/multer.js';
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ router.get('/', authMiddleware, getAll);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -41,11 +42,21 @@ router.get('/', authMiddleware, getAll);
  *                 type: string
  *               notes:
  *                 type: string
+ *               contact:
+ *                 type: string
+ *               type_contact:
+ *                 type: string
+ *               cv:
+ *                 type: string
+ *                 format: binary
+ *               lm:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
  *         description: Candidature créée
  */
-router.post('/', authMiddleware, create);
+router.post('/', authMiddleware, upload.fields([{ name: 'cv', maxCount: 1 }, { name: 'lm', maxCount: 1 }]), create);
 
 /**
  * @swagger

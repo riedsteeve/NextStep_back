@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { setupSwagger } from "./config/swagger.js";
@@ -8,17 +9,20 @@ const app = express();
 const allowedOrigins = [
   "https://nextstep-roan-two.vercel.app",
   "https://nextstep-roan-two.vercel.app/",
-  "http://localhost:5173"
+  "http://localhost:5173",
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
     // Autoriser les requêtes sans origine (comme Postman ou les outils mobiles)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.FRONTEND_URL === origin) {
+    if (
+      allowedOrigins.indexOf(origin) !== -1 ||
+      process.env.FRONTEND_URL === origin
+    ) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
