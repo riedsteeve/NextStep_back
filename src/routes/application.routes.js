@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAll, create, update, deleteApp } from '../controllers/application.controller.js';
+import { getAll, create, update, deleteApp, downloadFile } from '../controllers/application.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 import upload from '../config/multer.js';
 
@@ -102,6 +102,8 @@ router.put('/:id', authMiddleware, update);
  *       200:
  *         description: Candidature supprimée
  */
+router.get('/:id/file/:type', authMiddleware, downloadFile);
+
 router.delete('/:id', authMiddleware, deleteApp);
 
 export default router;

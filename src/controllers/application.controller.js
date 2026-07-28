@@ -101,6 +101,46 @@ export const update = async (req, res) => {
   res.json(data);
 };
 
+// Télécharger un fichier (CV ou LM) depuis Azure
+export const downloadFile = async (req, res) => {
+  const { id, type } = req.params;
+  const userId = req.user.id;
+  const role = req.user.role;
+
+  if (type !== "cv" && type !== "lm") {
+    return res.status(400).json({ message: "Type de fichier invalide" });
+  }
+
+  const column = type === "cv" ? "nom_cv" : "nom_lm";
+
+  let query = supabase.from("applications").select(column).eq("id", id);
+  if (role !== "admin") {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query.single();
+
+  if (error || !data || !data[column]) {
+    return res.status(404).json({ message: "Fichier non trouvé" });
+  }
+
+  const blobName = data[column];
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+  try {
+    const downloadResponse = await blockBlobClient.download(0);
+    const originalName = blobName.substring(blobName.indexOf("-") + 1);
+
+    res.setHeader("Content-Type", downloadResponse.contentType || "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${originalName}"`);
+    res.setHeader("Content-Length", downloadResponse.contentLength);
+
+    downloadResponse.readableStreamBody.pipe(res);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors du téléchargement du fichier" });
+  }
+};
+
 // Supprimer une candidature
 export const deleteApp = async (req, res) => {
   const { id } = req.params;
