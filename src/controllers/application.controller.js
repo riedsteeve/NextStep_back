@@ -80,7 +80,22 @@ export const update = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   const role = req.user.role;
-  const updates = req.body;
+  const { company, position, status, notes, contact, type_contact } = req.body;
+
+  const updates = {
+    company,
+    position,
+    status,
+    notes: notes || null,
+    contact: contact || null,
+    type_contact: type_contact || null,
+  };
+
+  const cvFile = req.files?.cv ? req.files.cv[0] : null;
+  const lmFile = req.files?.lm ? req.files.lm[0] : null;
+
+  if (cvFile) updates.nom_cv = await uploadToAzure(cvFile);
+  if (lmFile) updates.nom_lm = await uploadToAzure(lmFile);
 
   let query = supabase.from("applications").update(updates).eq("id", id);
   // Si ce n'est pas un admin, on vérifie que la candidature lui appartient

@@ -75,14 +75,33 @@ router.post('/', authMiddleware, upload.fields([{ name: 'cv', maxCount: 1 }, { n
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
+ *             properties:
+ *               company:
+ *                 type: string
+ *               position:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               notes:
+ *                 type: string
+ *               contact:
+ *                 type: string
+ *               type_contact:
+ *                 type: string
+ *               cv:
+ *                 type: string
+ *                 format: binary
+ *               lm:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: Candidature mise à jour
  */
-router.put('/:id', authMiddleware, update);
+router.put('/:id', authMiddleware, upload.fields([{ name: 'cv', maxCount: 1 }, { name: 'lm', maxCount: 1 }]), update);
 
 /**
  * @swagger
