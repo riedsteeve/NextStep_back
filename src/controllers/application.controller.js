@@ -14,12 +14,15 @@ const uploadToAzure = async (file) => {
   if (!file) return null;
 
   const blobName = `${Date.now()}-${file.originalname}`;
+  console.log(`📤 Upload vers Azure: ${file.originalname} → ${blobName}`);
+
   const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
   await blockBlobClient.uploadData(file.buffer, {
     blobHTTPHeaders: { blobContentType: file.mimetype },
   });
 
+  console.log(`✅ Upload réussi: ${blobName}`);
   return blobName;
 };
 
